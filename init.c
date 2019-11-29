@@ -19,7 +19,7 @@ void PeriphInit(void)
     ICGC1 = 0x38;
     // Sets MFD multiplication factor (N) to 4 and RFD divisor (R) to 1
     ICGC2 = 0x20;
-    // Waita until FLL frequency is locked
+    // Wait until FLL frequency is locked
     while (!(ICGS1 & 0x08))
       ;
   #else
@@ -35,39 +35,41 @@ void PeriphInit(void)
       ;
   #endif
   
-  // Configures PTA[7..5] as output LEDs
-  PTAD = 0x00;
-  PTADD = 0xE0;
+  	// Configures PTA[7..5] as output LEDs
+  	PTAD = 0x00;
+  	PTADD = 0xE0;
   
-  // Configures PTB[7..3] as output LEDs
-  PTBD = 0x00;
-  PTBDD  = 0xF8;
+  	// Configures PTB[7..0] as [1100_1000], pins 0,1,2,4,5 are inputs.
+  	PTBD = 0x00;
+  	PTBDD  = 0xC8;
   
-  // Configures ADC peripheral (ADC clock = 1MHz)
-  // Bus clock as clock source, 8-bit conversion and divisor = 8
-  ADCCFG = 0x60;
-  // Selects ADC channel 0 (PTA0) and continuous conversion)
-  ADCSC1 = 0x20;
+  	// Configures ADC peripheral (ADC clock = 1MHz)
+  	// Bus clock as clock source, 8-bit conversion and divisor = 8
+  	ADCCFG = 0x60;
+  	// Selects ADC channel 0 (PTA0) and continuous conversion)
+  	ADCSC1 = 0x20;
   
-  /* TPM1 is used for the delay function. */
-  //Counter overflow every 1ms
-  TPM1MOD = 8000;
-  // Stops timer and selects 1 as prescaler divisor
-  TPM1SC = 0x00;    
-  // Initializes LCD Driver Peripheral
-  LCDInit();
+  	/* TPM1 is used for the delay function. */
+  	//Counter overflow every 1ms
+  	TPM1MOD = 8000;
+  	// Stops timer and selects 1 as prescaler divisor
+  	TPM1SC = 0x00;    
+  	// Initializes LCD Driver Peripheral
+  	LCDInit();
         
 }
 void GPIO_Init(void) { 
   
- PTCPE = 0x80; /* Enable PTC7 pin Internal Pullups */
+ 	PTCPE = 0x80; 	/* Enable PTC7 pin Internal Pullups */
+	PTBPE = 0x30;	/* Pins 4 and 5 are pull up enabled. */
+	//PTBCC = 0xB8;	/* enable iic, master mode sel, tx mode, txak */
 }
 void init(void){
   
-  // Initializes Peripherals
-  PeriphInit();
-  LCDOnOffState();
-  GPIO_Init();
-  KBI_configuration();
-  SPI_configuration ();
+  	// Initializes Peripherals
+  	PeriphInit();
+  	LCDOnOffState();
+  	GPIO_Init();
+  	KBI_configuration();
+  	SPI_configuration ();
 }
