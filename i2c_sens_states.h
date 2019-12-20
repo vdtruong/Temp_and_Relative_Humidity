@@ -8,7 +8,7 @@
 	#define WR 0	// Write bit.
 	#define RD 1	// Read bit.
 
-enum ei2c_states			// Sensor capturing/other states.
+enum ei2c_states				// Sensor capturing/other states.
 {	// Original states from Fabio.
 	I2C_IDLE
 	I2C_START,
@@ -17,7 +17,7 @@ enum ei2c_states			// Sensor capturing/other states.
 	I2C_WRITE_LOVER_ADDR,
 	I2C_WRITE_BYTE,
 	I2C_DUMMY_READ,
-	I2D_READ_BYTE,
+	I2D_RD_BYTE,
 	I2C_STOP,
 	I2C_SENS_WR,				// write to sensor
 	I2C_SENS_RD,				// read from sensor
@@ -32,7 +32,8 @@ enum ei2c_states			// Sensor capturing/other states.
 	I2C_SND_NACK,				// Send NACK.
 	I2C_NACK_QRY,				// NACK query.
 	I2C_SND_STOP_BIT,			// Send stop bit.
-	I2C_READ_CRC				// Read CRC.
+	I2C_RD_CRC					// Read CRC.
+	I2C_RD_2ND_BYTE			// Read second byte.
 };
 
 enum app_states		// Application states.
