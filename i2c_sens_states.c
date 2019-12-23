@@ -14,6 +14,7 @@ enum ei2c_states i2c_fsm(char new_state)
 	static char i2c_buffer[4];	/* i2c_buffer array */
 	static uint i;
 	static uint rd_temp = 1;	/* read temp = 1, else read r.h. */
+	static uint snd_cmd = 0		// 1 is for sending a command after ACK.
 
 	/* Fill up the i2c_buffer array. */
 	for (i=0, i<4, i++)
@@ -78,24 +79,34 @@ enum ei2c_states i2c_fsm(char new_state)
 		// Query for ACK response from slave.
 		case I2C_ACK_QRY;
 			if (IICS_RXAK)	/*	If NAK from slave. */
+			{
+				i2c_state = I2C_IDLE;
+			}
+			else 				
+			{
+				if (snd_cmd)	// Send a write or read command.
 				{
-					i2c_state = I2C_IDLE;
-				}
-			else // Need a flag to indicate a temp read or r.h. read.
-				{
-					if (rd_temp){
+					if (rd_temp)
+					{	// Need a flag to indicate a temp read or r.h. read.
 						i2c_state = I2C_SND_RD_TEMP_CMD;	// Next state.
-						}
-					else{
+					}
+					else
+					{
 						i2c_state = I2C_SND_RD_RH_CMD;	// Next state.
-						}
+					}
+					}
+				else	// Wait for the acquisition to finish.
+				{
+					i2c_state = I2C_READ_WAIT;				// Wait before read.
 				}
+			}
 			break;
 		/***************************/
-		// Send the read temp. command.
+		// Send the read temp. command packet.
 		case I2C_SND_RD_TEMP_CMD;
 			IICD = i2c_buffer[1]|RD;	// Send the read temp. command.
-			i2c_state = I2C_STRT_RD;	// Next state, send the read command.
+			cmd_or_rd = 0					// 0 is for read time after ACK.
+			i2c_state = I2C_ACK_QRYI;	// Next state, query for ACK.
 			break;
 		/***************************/
 		// Read one byte of data from sensor.
