@@ -10,7 +10,7 @@
 
 enum ei2c_states				// Sensor capturing/other states.
 {	// Original states from Fabio.
-	I2C_IDLE
+	I2C_IDLE,
 	I2C_START,
 	I2C_REPEATED_START,
 	I2C_WRITE_HIGER_ADDR,
@@ -29,11 +29,15 @@ enum ei2c_states				// Sensor capturing/other states.
 	I2C_SND_RD_RH_CMD,		// Read Relative humility command.
 	I2C_WAIT,					// Wait state.
 	I2C_SND_ACK,				// Send ACK.
-	I2C_SND_NACK,				// Send NACK.
+	I2C_SND_NAK,				// Send NAK.
 	I2C_NACK_QRY,				// NACK query.
 	I2C_SND_STOP_BIT,			// Send stop bit.
-	I2C_RD_CRC					// Read CRC.
-	I2C_RD_2ND_BYTE			// Read second byte.
+	I2C_RD_CRC,					// Read CRC.
+	I2C_RD_2ND_BYTE,			// Read second byte.
+	I2C_STRT_RD,				// Send a start with read bit.
+	I2C_STRT_WR,				// Send a start with a write bit.
+	I2C_RD_WAIT,				// Wait before reading back data.
+	I2C_SND_RD_CMD				// Send the read command.
 };
 
 enum app_states		// Application states.

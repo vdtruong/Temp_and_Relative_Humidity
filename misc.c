@@ -1,10 +1,10 @@
 /* Misc. routines */
 /////////////////////////////////////////////////////////////////////////////////////////
-// Delay
+// delay
 // --------------------------------------------------------------------------------------
 // Delay of multiples of 1ms
 /////////////////////////////////////////////////////////////////////////////////////////
-void Delay(unsigned char del)
+void delay(unsigned char del)
 {
   // Selcts fBUS as timer clock source and starts the timer
   /* TPM divisor is 1. */

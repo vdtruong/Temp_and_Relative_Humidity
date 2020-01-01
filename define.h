@@ -8,3 +8,5 @@
                           using the 8-bit adc mode. */
 #define PWARRAY   20  /*  Pulse width array size. */
 #define CANLENGTH 8   /*  CAN message has a length of 8 bytes. */
+#define RD			1
+#define WR			0
