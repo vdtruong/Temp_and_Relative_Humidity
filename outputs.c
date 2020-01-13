@@ -10,8 +10,8 @@ void updateOutputs(void);
 /*********************************************/
 unsigned long int *percent(void){ /* returns a pointer */
  
-   byte i=0;
-   unsigned long int percnt = 0, *percntPtr =0;
+   byte i= 0;
+   unsigned long int percnt = 0, *percntPtr = 0;
    word pulsWdth[PWARRAY*2], pulsWdthSum = 0, avgPulsWdth = 0;
    
    /*  Find the pulse width array and pw sum. */
@@ -36,18 +36,18 @@ unsigned long int *percent(void){ /* returns a pointer */
    return percntPtr; /* returns a pointer */
   
 }
-void showAnalog(unsigned long int *percnt){  /* pointer as an input */
+void showAnalog(unsigned long int *percnt){  		/* pointer as an input */
   
    unsigned long int analog = 0;
    word anaFirstDig = 0, anaSecDig = 0, anaThirdDig = 0;
   
-   analog = *percnt*5;  /* value of percnt */
+   analog = *percnt*5;  									/* value of percnt */
    anaFirstDig = analog/1000;
    anaSecDig = (analog - anaFirstDig*1000)/100;
    anaThirdDig = ((analog - anaFirstDig*1000)-(anaSecDig*100))/10;
         
    /* first time entering the analog mode */
-   if(firstEnter){/* Just entered analog mode. */            
+   if(firstEnter){											/* Just entered analog mode. */            
       /* Seems like we need to PrintString
        before any other string function. */
       PrintString("ANA = ");
@@ -61,13 +61,13 @@ void showAnalog(unsigned long int *percnt){  /* pointer as an input */
    DispLowHexVal((byte)anaSecDig, 8);
    DispLowHexVal((byte)anaThirdDig, 9);
 }
-void showPwmPerc(unsigned long int *percnt){
+void showPwmPerc(unsigned long int *percnt){			/* pointer as an input */	
   
    word firstDig = 0, secDig = 0, thirdDig = 0;  
-                                                    /* 51.7 */
-   firstDig = *percnt/100;                          /* 5 */
-   secDig = (*percnt - firstDig*100)/10;            /* 1 */
-   thirdDig = (*percnt - firstDig*100) - secDig*10; /* 7 */
+                                                   /* 51.7 */
+   firstDig = *percnt/100;                         /* 5 */
+   secDig = (*percnt - firstDig*100)/10;           /* 1 */
+   thirdDig = (*percnt - firstDig*100) - secDig*10;/* 7 */
   
    if(firstEnter){
       PrintString("DC = ");

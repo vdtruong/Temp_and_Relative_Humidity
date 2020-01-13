@@ -2,7 +2,7 @@
 //
 // Sample for Freescale DEMO9S08LC60
 //
-// This program displays the values of the PWM and the corresponding analog
+// This program displays the values of the temperature and relative humidity
 // on the LCD.
 //
 // Before to run this example, verify that all jumpers are in their default
@@ -34,7 +34,9 @@
     9-21-10 Try to implement spi to read CAN message from
             Coldfire MCF52259. 
     9-23-10 Got the spi to work as a slave.  Need to edit the
-            isr routine to accept the array of CAN message. */
+            isr routine to accept the array of CAN message. 
+    1-1-20  Show temp. and r.h. on the lcd.  Start working on state machine.
+*/
 
 #include <hidef.h>      /* for EnableInterrupts macro */
 #include "derivative.h" /* include peripheral declarations */
@@ -44,6 +46,7 @@
 #include "init.c"
 #include "display.c"
 #include "outputs.c"
+#include "i2c_sens_states.c"
 
 // Unsecured status flash
 const unsigned char flash_security  @0xFFBF = 0xFE;
@@ -56,6 +59,7 @@ const unsigned char flash_security  @0xFFBF = 0xFE;
 /////////////////////////////////////////////////////////////////////////////////////////
 void main(void)
 { 
+	static unsigned char strt = 1; // 1 will start the i2c_state_machine.
    init();  
    EnableInterrupts;
   
@@ -72,7 +76,8 @@ void main(void)
   
    for(;;) 
    {    
-      updateOutputs();
+      i2c_fsm(strt);
+		//updateOutputs();
     
    }/* for(;;) */
 }

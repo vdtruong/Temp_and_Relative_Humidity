@@ -40,6 +40,7 @@ void PeriphInit(void)
   	PTADD = 0xE0;
   
   	// Configures PTB[7..0] as [1100_1000], pins 0,1,2,4,5 are inputs.
+	// To use pull up, pin has to be input.
   	PTBD = 0x00;
   	PTBDD  = 0xC8;
   
@@ -61,7 +62,7 @@ void PeriphInit(void)
 void GPIO_Init(void) { 
   
  	PTCPE = 0x80; 	/* Enable PTC7 pin Internal Pullups */
-	PTBPE = 0x30;	/* Pins 4 and 5 are pull up enabled. */
+	PTBPE = 0x30;	/* Pins 4 and 5 are pull up enabled. The only iic pins for the demo9s08lc board. */
 	//PTBCC = 0xB8;	/* enable iic, master mode sel, tx mode, txak */
 }
 void init(void){
