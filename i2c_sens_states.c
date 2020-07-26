@@ -1,11 +1,13 @@
-/* Nov. 29, 2019i
+/* Nov. 29, 2019
 	States for sensor i2c states.
 
 	Adapted from Fabio Pereira.
+	This is for the Sensirion SHT20 sensor.
 */
 
 #include "i2c_sens_states.h"
 #include "define.h"
+//#include "misc.c"
 
 /* Function prototype(s). */
 //enum ei2c_states i2c_fsm(char new_state);
@@ -74,7 +76,7 @@ unsigned char *i2c_fsm(unsigned char strt)
 		case 1:											// i2c_start
 			IICC = 0xb0;								// Send the start bit.
 			IICD = *(i2c_buffer + 0);				// Send the addr. field with WR bit set (R/W = WR).
-			delay(20);									// Delay 20 ms.
+			Delay(20);									// Delay 20 ms.
 			while(!IICS_TCF);							// Wait until transmission is done.
 			snd_cmd = 1;								// Indicates after ACK, send a command.
 			i2c_state = 3; 							// I2C_ACK_QRY;			// next state
@@ -84,7 +86,7 @@ unsigned char *i2c_fsm(unsigned char strt)
 		case 2: 									// I2C_REPEATED_START:
 			IICC = 0xb4;						// Send repeated start.
 			IICD = *(i2c_buffer + 0)|RD;	// Send the addr. field plus the read bit (R/W = RD).
-			delay(20);							// Delay 20 ms.
+			Delay(20);							// Delay 20 ms.
 			while(!IICS_TCF);					// Wait until transmission is done.
 			snd_cmd = 0;						// Indicates the next send is not a command.
 			rpt_strt = 0;						// Reset.
@@ -126,7 +128,7 @@ unsigned char *i2c_fsm(unsigned char strt)
 		// Send the read command packet.
 		case 4:								// I2C_SND_RD_CMD;
 			IICD = cmd_byte;				// Send the read command.
-			delay(20); 						// Delay for 20 ms.
+			Delay(20); 						// Delay for 20 ms.
 			while(!IICS_TCF);				// Wait until transmission is done.
 			snd_cmd = 0;					// Do not send a read command next.
 			rpt_strt = 1;					// Send a repeated start next.
@@ -137,7 +139,7 @@ unsigned char *i2c_fsm(unsigned char strt)
 		case 5:								// I2C_DUMMY_READ:
 			IICC_TX = 0;					// Change to read mode.
 			*(i2c_buffer + 3) = IICD;	// Do a dummy read.
-			delay(20);						// Wait 20 ms.
+			Delay(20);						// Wait 20 ms.
 			while(!IICS_TCF);				// Wait until transmission is done.
 			i2c_state = 6;					// I2C_RD_BYTE;	// Dummy read, does not require an ACK send.
 			break;
@@ -146,7 +148,7 @@ unsigned char *i2c_fsm(unsigned char strt)
 		case 6:													// I2C_RD_BYTE:
 			rd_byte_cntr =+ 1;								// Increment counter.
 			*(i2c_buffer + rd_byte_cntr + 3) = IICD;	// Read one byte of data from sensor.
-			delay(20);											// Wait 20 ms.
+			Delay(20);											// Wait 20 ms.
 			while(!IICS_TCF);									// Wait until transmission is done.
 			if(rd_byte_cntr == 3 | rd_byte_cntr == 6) // Send NAK for these two counts.
 			{				
@@ -161,14 +163,14 @@ unsigned char *i2c_fsm(unsigned char strt)
 		// Send ACK after byte read.
 		case 7:							// I2C_SND_ACK:
 			IICC_TXAK = 0;				// Send ACK.
-			delay(10);					// Wait 10 ms.
+			Delay(10);					// Wait 10 ms.
 			i2c_state = 6;				// I2C_RD_BYTE;
 			break;
 		/***************************/
 		// Send NAK after CRC byte read.
 		case 8:							// I2C_SND_NAK:
 			IICC_TXAK = 1;				// Send NAK.
-			delay(10);					// Wait 10 ms.
+			Delay(10);					// Wait 10 ms.
 			i2c_state = 9;				// I2C_STOP;
 			break;
 		/***************************/
