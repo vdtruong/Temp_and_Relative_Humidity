@@ -10,3 +10,5 @@
 #define CANLENGTH 8   /*  CAN message has a length of 8 bytes. */
 #define RD			1
 #define WR			0
+#define CLK_STR_NM_TEMP	0x7CA2
+#define CLK_STR_NM_RH	0x5C24

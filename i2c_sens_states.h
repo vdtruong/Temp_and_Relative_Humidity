@@ -7,6 +7,8 @@
 /* Other constants. */
 	#define WR 0	// Write bit.
 	#define RD 1	// Read bit.
+	#define CLK_STR_NM_TEMP	0x7CA2	// clock stretching, normal, temp first
+	#define CLK_STR_NM_RH	0x5C24	// clock stretching, normal, rh first
 
 enum ei2c_states				// Sensor capturing/other states.
 {	// Original states from Fabio.
@@ -38,6 +40,8 @@ enum ei2c_states				// Sensor capturing/other states.
 	I2C_STRT_WR,				// Send a start with a write bit.
 	I2C_RD_WAIT,				// Wait before reading back data.
 	I2C_SND_RD_CMD				// Send the read command.
+	// Following are states for Sensirion SHTC3 sensor.
+
 };
 
 enum app_states		// Application states.
