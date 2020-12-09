@@ -3,6 +3,9 @@
 
 	Adapted from Fabio Pereira.
 	HCS08 Unleashed. 2008
+
+	This function writes each temperature
+	to the 7-seg display.
 */
 
 /* Function prototype(s). */
@@ -12,6 +15,8 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data);
 
 /***** Function begins ****/
 /* This is for the holtek ht16k33 7-seg display. */
+/* The data array contains data from the shtc3 sensor.
+ 	The data is in this order [rh_msb, rh_lsb, rh_crc, t_msb, t_lsb, t_crc]. */
 void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 {
 	static unsigned char done = 0;					// Indicates if state machine is done.
@@ -37,6 +42,10 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 														0x06,	// Digit 2 (com 3)
 														0x08,	// Digit 3 (com 4), F degree label
 														};		
+	static unsigned short int temp = 0;				// Set temperature value.
+	static float temp_f = 0;							// temperature in farenheit.*/
+	static float temp_c = 0;							// temperature in celsius. */
+	
 	/*		
 		i2c_states:
 		
@@ -51,14 +60,16 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 		8	CHK_DIG_FIN									// Check if all digits are written.
 	*/
 
-	if (strt)
-	{	
-		i2c_state = 1;									// go to start state
-	}
-	else
-	{
-		i2c_state = 0;									// stay at idle state.
-	}		
+	/* Move temperature data to temp variable. */
+	/* temp = t_msb, t_lsb */
+	/* Clear temp to all zeros. */
+	temp >> 16;
+	temp = temp | *(data + 3); /* Fill temp variable lsb with t_msb. */
+	temp << 8;						/* Left shift t_msb to temp variable msb. */
+	temp = temp | *(data + 4); /* Fill temp variable lsb with temp_lsb. */
+
+	/* Calculate temp for Celsius. */
+	temp_c = -45 + 175*(temp / 65536);
 
 	while(!done)
 	{
@@ -66,7 +77,7 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 		{
 			/***************************/
 			// I2C in idle state.
-			case 0:											// i2c_idl
+			case 0:											// i2c_idle
 				prev_st = 0;								// Set previous state.
 				done = 1;									// exit state machine
 				break;
@@ -86,6 +97,21 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				Delay(5);									// delay 5 ms.
 				break;
 			/***************************/
+			// Send digit address.
+			case 3:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = digit_addr[addr_indx];			// Send the digital address (com address).
+				prev_st = 3;
+				i2c_state = 5; 							// go to ack query
+				Delay(5);									// delay 5 ms.			
+				break;
+			/***************************/
+			// Send a stop bit and quits.
+			case 4:											// 
+				IICC_MST = 0;								// Send a stop (go to slave mode)
+				done = 1;									// 
+				break;
+			/**************************/
 			// Query for ACK response from slave.
 			case 5: 											// I2C_ACK_QRY;
 				if (IICS_RXAK)								/*	If NAK from slave. */
@@ -105,21 +131,6 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				}
 				break;
 			/***************************/
-			// Send digit address.
-			case 3:											// 
-				while(!IICS_TCF);							// Wait until transmission is done.
-				IICD = digit_addr[addr_indx];			// Send the digital address (com address).
-				prev_st = 3;
-				i2c_state = 5; 							// go to ack query
-				Delay(5);									// delay 5 ms.			
-				break;
-			/***************************/
-			// Send a stop bit and quits.
-			case 4:											// 
-				IICC_MST = 0;								// Send a stop (go to slave mode)
-				done = 1;									// 
-				break;
-			/**************************/
 			// Send digital data.
 			case 6:											// 
 				while(!IICS_TCF);							// Wait until transmission is done.
