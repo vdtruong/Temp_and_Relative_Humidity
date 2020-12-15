@@ -10,7 +10,7 @@
 
 /* Function prototype(s). */
 // Inputs: address of 7-seg display, pointer to temp. data array
-void ht16k33_fsm(unsigned char slav_addr, unsigned char *data);	
+unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data);	
 /**************************/
 
 /***** Function begins ****/
@@ -19,9 +19,9 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data);
  	The data is in this order [rh_msb, rh_lsb, rh_crc, t_msb, t_lsb, t_crc]. */
 void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 {
-	static unsigned char done = 0;					// Indicates if state machine is done.
+	static unsigned char done_sm = 0;				// Indicates if state machine is done.
 	static unsigned char addr_indx = 0;				// Address of the com channel.
-	static unsigned char digit_data = 0;			// Data for each digit of the 7-seg display.
+	//static unsigned char digit_data = 0;			// Data for each digit of the 7-seg display.
 	static unsigned char i2c_state = 0;				// State machine index.
 	static unsigned char i2c_buffer[10]= 	{
 														0xEE,	// Send addr. and write. 	0	
@@ -35,6 +35,36 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 														0x00,	// read r.h. data.			8	5
 														0x00 	// read r.h. crc				9	6
 														};		
+	static unsigned char disp_dig_lut[13] = {			// display look up table
+			  												0x3f,	// 0
+															0x06,	// 1
+															0x5b,	// 2
+															0x4f,	// 3
+															0x66, // 4
+															0x6d, //	5
+															0x7d,	// 6
+															0x07, // 7
+															0x7f, // 8
+															0x6f, // 9
+															0x39, // c
+															0x79, // e
+															0x71 	// f
+															}		
+	static unsigned char disp_dig_lut_dp[13] = {		// with decimal point
+			  												0xbf,	// 0
+															0x86,	// 1
+															0xdb,	// 2
+															0xcf,	// 3
+															0xe6, // 4
+															0xed, //	5
+															0xfd,	// 6
+															0x87, // 7
+															0xff, // 8
+															0xef, // 9
+															0xb9, // c
+															0xf9, // e
+															0xf1 	// f
+															}		
 	/* The COM address of each digit.  COM2 is for the colen.  Not used here. */
 	static unsigned char digit_addr[4]= 	{
 														0x00,	// Digit 0 (com 0) 		
@@ -42,7 +72,7 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 														0x06,	// Digit 2 (com 3)
 														0x08,	// Digit 3 (com 4), F degree label
 														};		
-	static unsigned short int temp = 0;				// Set temperature value.
+	static unsigned short int temp_raw = 0;		// Set temperature value.
 	static float temp_f = 0;							// temperature in farenheit.*/
 	static float temp_c = 0;							// temperature in celsius. */
 	
@@ -63,15 +93,74 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 	/* Move temperature data to temp variable. */
 	/* temp = t_msb, t_lsb */
 	/* Clear temp to all zeros. */
-	temp >> 16;
-	temp = temp | *(data + 3); /* Fill temp variable lsb with t_msb. */
-	temp << 8;						/* Left shift t_msb to temp variable msb. */
-	temp = temp | *(data + 4); /* Fill temp variable lsb with temp_lsb. */
+	temp_raw >> 16;
+	temp_raw = temp_raw | *(data + 3); 	/* Fill temp variable lsb with t_msb. */
+	temp_raw << 8;								/* Left shift t_msb to temp variable msb. */
+	temp_raw = temp_raw | *(data + 4); 	/* Fill temp variable lsb with temp_lsb. */
 
-	/* Calculate temp for Celsius. */
-	temp_c = -45 + 175*(temp / 65536);
+	/* Calculate temp. for Celsius. */
+	temp_c = -45 + 175*(temp_raw / 65536);
+	/* Calculate temp. for Farenheit. */
+	temp_f = (-81 + 315*(temp_raw / 65536)) + 32;
 
-	while(!done)
+	/* Form the temperature digit array. */
+	/* Convert temperature to string. */
+	/*char temp_str [4];
+	sprintf(temp_str, "%f", temp_c);*/
+
+	/* Extract each temperature value as an integer. 
+	 * Use this integer as an index to the displ_dig array. */
+	static unsigned short char b = 0, done = 0;
+	static float a = 0.0, c = 0.0, d = 0.0,  diff = 0.0;
+	static unsigned short char cntr = 0;
+	static unsigned short char disp_dig_indx[3];	/* Digits indexes for the display. */
+	static unsigned short char dspl_dig[4];		// Display digits array for 7-seg. 
+	
+	a = temp_f/10.0;
+	while (!done)
+	{
+		diff = a - b;
+		if (diff < 1.0)
+		{
+			if (cntr = 0)
+			{
+				*(disp_dig_indx + 0) = b;
+				*(dspl_dig + cntr) = disp_dig_lut[disp_dig_indx];  
+				b = 0;
+			}
+			else if (cntr = 1)
+			{
+				*(dig_digit_indx + 1) = b;
+				*(dspl_dig + cntr) = disp_dig_lut_dp[disp_dig_indx];  
+				b = 0;
+			}
+			else (cntr = 2)
+			{
+				*(dig_digit_indx + 2) = b;
+				*(dspl_dig + cntr) = disp_dig_lut[disp_dig_indx];  
+				b = 0;
+			}
+			cntr += 1;
+			if (cntr > 2)
+			{
+				done = 1;
+				*(dspl_dig + 3) = disp_dig_lut[12];	// Unit F digit.  
+			}
+			else
+			{
+				c = a - b;
+				d = c*10.0;
+				a = d;
+			}
+		}
+		else
+		{
+			b += 1;
+		}
+	}
+
+	/* Now send the display digit. */
+	while(!done_sm)
 	{
 		switch(i2c_state)
 		{
@@ -79,7 +168,7 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			// I2C in idle state.
 			case 0:											// i2c_idle
 				prev_st = 0;								// Set previous state.
-				done = 1;									// exit state machine
+				done_sm = 1;								// exit state machine
 				break;
 			/***************************/
 			// Send a start condition.
@@ -94,29 +183,29 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				IICD = slav_addr;							// Send the addr. field with WR bit set (R/W = WR).
 				prev_st = 2;
 				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-				Delay(5);									// delay 5 ms.
+				delay(5);									// delay 5 ms.
 				break;
 			/***************************/
 			// Send digit address.
 			case 3:											// 
 				while(!IICS_TCF);							// Wait until transmission is done.
-				IICD = digit_addr[addr_indx];			// Send the digital address (com address).
+				IICD = *(digit_addr + addr_indx);	// Send the digital address (com address).
 				prev_st = 3;
 				i2c_state = 5; 							// go to ack query
-				Delay(5);									// delay 5 ms.			
+				delay(5);									// delay 5 ms.			
 				break;
 			/***************************/
 			// Send a stop bit and quits.
 			case 4:											// 
 				IICC_MST = 0;								// Send a stop (go to slave mode)
-				done = 1;									// 
+				done_sm = 1;								// 
 				break;
 			/**************************/
 			// Query for ACK response from slave.
 			case 5: 											// I2C_ACK_QRY;
 				if (IICS_RXAK)								/*	If NAK from slave. */
 				{	
-					i2c_state = 4;							//I2C_snd_stop_bit and quits;
+					i2c_state = 4;							// I2C_snd_stop_bit and quits;
 				}
 				else 											// If ACK.
 				{
@@ -134,10 +223,10 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			// Send digital data.
 			case 6:											// 
 				while(!IICS_TCF);							// Wait until transmission is done.
-				IICD = cntrl_reg_label;					// Send the digit data
+				IICD = *(dspl_digit + addr_indx);	// Send the digit data
 				prev_st = 6;								// 
 				i2c_state = 7; 							// stop bit;			// next state
-				Delay(5);									// delay 5 ms.			
+				delay(5);									// delay 5 ms.			
 				break;
 			/***************************/
 			// Send a stop and go to slave mode.
@@ -149,7 +238,7 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			// Decide if done with state machine.
 			case 8:											// 
 				if (addr_indx == 3){
-					done = 1;								// done with digits
+					done_sm = 1;							// done with digits
 				}
 				else {
 					addr_indx += 1;
@@ -159,3 +248,5 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			/**************************/
 		}														// switch
 	}															// while
+
+	return done_sm;
