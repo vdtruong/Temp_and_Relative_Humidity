@@ -7,18 +7,17 @@
 /* It was created back in 2009 and worked for the test fixture. */
 /* It is now adapted to work for the pibs chassis. */
 /* The pibs project will only use the two iic and rs232 pairs modules. */
+/* This also adds the initialization function for the holtek module. */
 
 /* function prototypes */
 void MCU_Init(void);
-/*void ADC_Init (void);
-void spi2Init(void);
-void spi1Init(void);*/
 void SCI_Init (void);
 void iic1Init(void);
 void iic2Init(void);
 void GPIO_Init(void);
 void initDevice(void);
-void initFuncts(void);
+//void initFuncts(void);
+void initHt16k33(void);
 /***********************/
 
 /* begin of functions */
@@ -27,16 +26,7 @@ void MCU_Init(void) {
                 		// enabled. RESET pin enabled
   	SOPT2_IIC1PS = 1; // move icc1 to port B
   	SCGC1 = 0x1D; 		// Bus Clock to ADC, SCI1, iic1 and iic2 modules are enabled
-  	//SCGC2 = 0x03; 		// enable spi1 and spi2 modules
-}
-/*void ADC_Init (void) {
-  	ADCSC1 = 0x20; 	// Interrupt disable. Continuous conversion and channel 0
-                 		// active
-  	ADCSC2 = 0x00; 	// Software trigger selected
-  	ADCCFG = 0x30; 	// Input clock/2. Long Sample time configuration. 8-bit
-                 		// conversion
-  	APCTL1 = 0x00; 	// ADC0 pin disable, 1 is for digital i/o.
-}*/
+}	
 void SCI_Init (void){
  	SCI1C1  = 0x00;  	// 8-bit mode. Normal operation
   	SCI1C2  = 0x0C;  	// Receiver interrupt disabled. Transmitter and receiver enabled
@@ -46,16 +36,6 @@ void SCI_Init (void){
    	             	// Baud rate = -------------------- = ------------ = 9600bps
                    	//              [SBR12:SBR0] x 16         26 x 16
 }
-/*void spi2Init(void){	// for Toshiba 7-seg. display
-  	SPI2BR = 0x75;    // determine the baud rate
-  	SPI2C1 = 0x50;    // enable system and master mode
-  	SPI2C2 = 0x00;
-}*/
-/*void spi1Init(void){	// for ezlcd105
-  	SPI1BR = 0x13;    // determine the baud rate; 125 kHz 
-  	SPI1C1 = 0x50;    // enable system and master mode
-  	SPI1C2 = 0x00;
-}*/
 void iic1Init(void){
   	IIC1F = 0x0B;     // multiply factor of 1, SCL divider of 40, br=100k
   	IIC1C1_IICEN = 1; // iic is enabled
@@ -76,14 +56,50 @@ void GPIO_Init(void) {
   	PTHPE = 0xC0; 						// enable pull ups on PTH7 and PTH6 pins for IIC2
   	PTBPE = 0xC0; 						// enable pull ups on PTB7 and PTB6 pins for iic1
 }
+void initHt16k33(void){
+	/* Initialize all displays. 
+	 * Send four init. commands to each 
+	 * display.  The displays use iic1. */
+	static unsigned char slv_addr[8] = [0xe0, 0xe2, 0xe4, 0xe6, 0xe8, 0xea, 0xec, 0xee];	/* slave address with write bit */
+	static unsigned char cmd_codes[4] = [0x21, 0xa0, 0xe7, 0x80]; 									/* osc, row_output, dim, blink */
+	static unsigned char slv_addr_cntr = 0;																/* There are eight displays. */
+	static unsigned char cmd_code_cntr = 0;																/* There are four command codes. */
+	static unsigned char done_slv_addr = 0;																/* When done sending initialization for each display. */
+	static unsigned char done_cmd_code = 0;																/* When done sending init. command code. */
+
+	while(!done_slv_addr){
+		while(!done_cmd_code){
+			IIC1C1_TX   =	 1; 									// set TX bit for Addr. cycle
+  			IIC1C1_MST  = 1;    									// set master bit to generate a Start
+  			IIC1D       = *(slv_addr + slv_addr_cntr); 	// send addr. data; lsb is dir. of slave
+			IIC1S_IICIF = 1; 										// clear iic int. flag for succ. byte transfer
+                   												// after sending the master start command
+  			if(!IIC2S_RXAK){                					// if ack by slave    
+       		IIC1D = *(cmd_codes + cmd_code_cntr); 		// send command code
+		  		IIC1C1_MST = 0; 									// send stop bit
+				delay(10);											// delay after each command
+			}
+			else{
+				IIC1C1_MST = 0; 									// send stop bit
+			}
+			cmd_code_cntr += 1;
+			if (cmd_code_cntr > 3){
+				done_cmd_code = 1;
+			}
+		}
+		slv_addr_cntr += 1;										// Move to next display.
+		if (slv_addr_cntr > 8){
+			done_slv_addr = 1;
+		}
+	}
+}
 void initDevice(void){
   	MCU_Init();       				// initializes the MCU
   	GPIO_Init();      				// initializes GPIO
-  	//ADC_Init();       				// Function that initializes the ADC module
-  	SCI_Init();
-  	//spi1Init();
-  	//spi2Init();
-  	iic1Init();
+ 	SCI_Init();
+ 	iic1Init();
   	iic2Init();
+	delay(100);
+	initHt16k33();
 }
 /* end of functions */
