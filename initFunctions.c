@@ -60,8 +60,8 @@ void initHt16k33(void){
 	/* Initialize all displays. 
 	 * Send four init. commands to each 
 	 * display.  The displays use iic1. */
-	static unsigned char slv_addr[8] = [0xe0, 0xe2, 0xe4, 0xe6, 0xe8, 0xea, 0xec, 0xee];	/* slave address with write bit */
-	static unsigned char cmd_codes[4] = [0x21, 0xa0, 0xe7, 0x80]; 									/* osc, row_output, dim, blink */
+	static unsigned char slv_addr[8] = {0xe0, 0xe2, 0xe4, 0xe6, 0xe8, 0xea, 0xec, 0xee};	/* slave address with write bit */
+	static unsigned char cmd_codes[4] = {0x21, 0xa0, 0xe7, 0x80}; 									/* osc, row_output, dim, blink */
 	static unsigned char slv_addr_cntr = 0;																/* There are eight displays. */
 	static unsigned char cmd_code_cntr = 0;																/* There are four command codes. */
 	static unsigned char done_slv_addr = 0;																/* When done sending initialization for each display. */

@@ -120,26 +120,26 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			if (cntr = 0)
 			{
 				*(disp_dig_indx + 0) = b;
-				*(dspl_dig + cntr) = disp_dig_lut[disp_dig_indx];  
+				*(dspl_dig + cntr) = *(disp_dig_lut + disp_dig_indx);  
 				b = 0;
 			}
 			else if (cntr = 1)
 			{
 				*(dig_digit_indx + 1) = b;
-				*(dspl_dig + cntr) = disp_dig_lut_dp[disp_dig_indx];  
+				*(dspl_dig + cntr) = *(disp_dig_lut_dp + disp_dig_indx);  
 				b = 0;
 			}
 			else (cntr = 2)
 			{
 				*(dig_digit_indx + 2) = b;
-				*(dspl_dig + cntr) = disp_dig_lut[disp_dig_indx];  
+				*(dspl_dig + cntr) = *(disp_dig_lut + disp_dig_indx);  
 				b = 0;
 			}
 			cntr += 1;
 			if (cntr > 2)
 			{
 				done = 1;
-				*(dspl_dig + 3) = disp_dig_lut[12];	// Unit F digit.  
+				*(dspl_dig + 3) = *(disp_dig_lut + 12);	// Unit F digit.  
 			}
 			else
 			{
