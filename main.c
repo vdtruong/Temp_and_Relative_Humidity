@@ -7,10 +7,11 @@
 */
 
 #include "initFunctions.c"
-#include "contUpdate.c"
-#include "commandsFunctions.c"
+#include "i2c_sens_states.c"
+#include "holtek_ht16k33.c"
 #include "misc.c"
 #include "tca9548a.c"
+#include "structures.h"
 
 
 void main(void) { 
@@ -40,8 +41,8 @@ void main(void) {
 			slv_addr_cntr = 0;					/* Reset to first display. */
    	//sciComm();    /* comm. with labview */
   
-  } /* loop forever */
-  /* please make sure that you never leave main */
+  } 	/* loop forever */
+  		/* please make sure that you never leave main */
 }
 
 
