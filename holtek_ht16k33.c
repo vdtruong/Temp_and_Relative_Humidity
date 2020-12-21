@@ -17,7 +17,7 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data);
 /* This is for the holtek ht16k33 7-seg display. */
 /* The data array contains data from the shtc3 sensor.
  	The data is in this order [rh_msb, rh_lsb, rh_crc, t_msb, t_lsb, t_crc]. */
-void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
+unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 {
 	static unsigned char done_sm = 0;				// Indicates if state machine is done.
 	static unsigned char addr_indx = 0;				// Address of the com channel.
@@ -99,14 +99,9 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 	temp_raw = temp_raw | *(data + 4); 	/* Fill temp variable lsb with temp_lsb. */
 
 	/* Calculate temp. for Celsius. */
-	temp_c = -45 + 175*(temp_raw / 65536);
+	//	temp_c = -45 + 175*(temp_raw / 65536);
 	/* Calculate temp. for Farenheit. */
 	temp_f = (-81 + 315*(temp_raw / 65536)) + 32;
-
-	/* Form the temperature digit array. */
-	/* Convert temperature to string. */
-	/*char temp_str [4];
-	sprintf(temp_str, "%f", temp_c);*/
 
 	/* Extract each temperature value as an integer. 
 	 * Use this integer as an index to the displ_dig array. */
@@ -154,9 +149,7 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			}
 		}
 		else
-		{
 			b += 1;
-		}
 	}
 
 	/* Now send the display digit. */
@@ -204,19 +197,13 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			// Query for ACK response from slave.
 			case 5: 											// I2C_ACK_QRY;
 				if (IICS_RXAK)								/*	If NAK from slave. */
-				{	
 					i2c_state = 4;							// I2C_snd_stop_bit and quits;
-				}
 				else 											// If ACK.
 				{
 					if (prev_st == 2)						// If previous command is send device address.
-					{
 						i2c_state = 3;						// Go to send digit address.
-					}	
 					else if (prev_st == 3)				// If previous command is send digit address.
-					{
 						i2c_state = 6;						// Go to send digit data.
-					}	
 				}
 				break;
 			/***************************/
@@ -237,9 +224,8 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 			/**************************/
 			// Decide if done with state machine.
 			case 8:											// 
-				if (addr_indx == 3){
-					done_sm = 1;							// done with digits
-				}
+				if (addr_indx == 3)
+					done_sm = 1;							// done with digit
 				else {
 					addr_indx += 1;
 					i2c_state = 1;							// go to start bit state
@@ -250,3 +236,4 @@ void ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 	}															// while
 
 	return done_sm;
+}

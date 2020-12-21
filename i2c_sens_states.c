@@ -8,13 +8,13 @@
 #include "i2c_sens_states.h"
 #include "define.h"
 #include "structures.h"
-//#include "misc.c"
+#include "misc.c"
 
 /* Function prototype(s). */
 //enum ei2c_states i2c_fsm(char new_state);
 unsigned char *i2c_fsm(unsigned char strt);			// Function returns the pointer to the buffer array.
 /**************************/
-unsigned char *i2c_fsm_shtc3(unsigned char strt);	// Function returns the pointer to the data array.
+shtc3_output i2c_fsm_shtc3(unsigned char strt);		// Function returns the structure. */
 /**************************/
 
 /***** Function begins ****/
@@ -58,18 +58,10 @@ unsigned char *i2c_fsm(unsigned char strt)
 	*/
 
 	if (strt)
-	{
 		i2c_state = 1;	// go to start state
-	}
 	else
-	{
 		i2c_state = 0;	// stay at idle state.
-	}	
 
-	// If the TCF flag is not set, do not process the state machine
-	// and return now with the current state.
-	//if (!IICS_TCF) return (i2c_state);
-	//IICS_TCF = 1;	// Clear TCF flag if it is set.
 	switch(i2c_state)
 	{
 		/***************************/
@@ -341,9 +333,9 @@ shtc3_output i2c_fsm_shtc3(unsigned char strt)
 			case 8:											// 
 				IICC_MST = 0;								// Send a stop (go to slave mode)
 				if (prev_st == 7)
-					i2c_state = 9;						// Wait for device to wake up.
+					i2c_state = 9;							// Wait for device to wake up.
 				else if (prev_st == 11 || prev_st == 16)
-					i2c_state = 1;						// send start bit 
+					i2c_state = 1;							// send start bit 
 				else
 					{
 						i2c_state = 0;						// idle

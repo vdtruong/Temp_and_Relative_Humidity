@@ -5,17 +5,13 @@
 	HCS08 Unleashed. 2008
 */
 
-/*#include "i2c_sens_states.h"
-#include "define.h"
-*/
-
 /* Function prototype(s). */
-void tca9548a_fsm(unsigned char cntrl_reg);	// Change which i2c channel to use.
+unsigned char tca9548a_fsm(unsigned char cntrl_reg);	// Change which i2c channel to use.
 /**************************/
 
 /***** Function begins ****/
 /* This is for the tca9548a iic expander. */
-void tca9548a_fsm(unsigned char cntrl_reg)
+unsigned char tca9548a_fsm(unsigned char cntrl_reg)
 {
 	static unsigned char cntrl_reg_label = 0x00;
 	static unsigned char done = 0;
@@ -124,4 +120,5 @@ void tca9548a_fsm(unsigned char cntrl_reg)
 			/**************************/
 		}
 	}
+	return(done);
 }

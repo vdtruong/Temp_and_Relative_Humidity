@@ -79,18 +79,15 @@ void initHt16k33(void){
 		  		IIC1C1_MST = 0; 									// send stop bit
 				delay(10);											// delay after each command
 			}
-			else{
+			else
 				IIC1C1_MST = 0; 									// send stop bit
-			}
 			cmd_code_cntr += 1;
-			if (cmd_code_cntr > 3){
+			if (cmd_code_cntr > 3)
 				done_cmd_code = 1;
-			}
 		}
 		slv_addr_cntr += 1;										// Move to next display.
-		if (slv_addr_cntr > 8){
+		if (slv_addr_cntr > 8)
 			done_slv_addr = 1;
-		}
 	}
 }
 void initDevice(void){
