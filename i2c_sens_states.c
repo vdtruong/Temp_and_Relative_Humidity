@@ -7,6 +7,7 @@
 
 #include "i2c_sens_states.h"
 #include "define.h"
+#include "structures.h"
 //#include "misc.c"
 
 /* Function prototype(s). */
@@ -200,7 +201,7 @@ unsigned char *i2c_fsm(unsigned char strt)
 
 /***** Function begins ****/
 /* This is for the shtc3 sensor. */
-unsigned char *i2c_fsm_shtc3(unsigned char strt)
+shtc3_output i2c_fsm_shtc3(unsigned char strt)
 {
 	static unsigned char i2c_state;
 	static unsigned char rd_temp = 1;				/* read temp = 1, else read r.h. */
@@ -222,14 +223,8 @@ unsigned char *i2c_fsm_shtc3(unsigned char strt)
 														0x00,	// read r.h. data.		8		5
 														0x00 	// read r.h. crc			9		6
 														};		
-	static unsigned char data[6] = 			{
-			  											0x00,	// rh msb 
-			  											0x00,	// rh lsb
-														0x00, // rh crc
-														0x00,	// t msb
-														0x00, // t lsb
-														0x00	// t crc
-														};		
+	shtc3_output ste_out;								// state machine outputs
+	
 	/*		
 		i2c_state:
 		
@@ -255,238 +250,215 @@ unsigned char *i2c_fsm_shtc3(unsigned char strt)
 		19	I2C_SND_SLEEP_CMD_LSB
 	*/
 
-	if (strt)
+	while(!ste_out.done)
 	{
-		i2c_state = 1;									// go to start state
-	}
-	else
-	{
-		i2c_state = 0;									// stay at idle state.
-	}	
+		if (strt)
+			i2c_state = 1;									// go to start state
+		else
+			i2c_state = 0;									// stay at idle state	
 
-	// If the TCF flag is not set, do not process the state machine
-	// and return now with the current state.
-	//if (!IICS_TCF) return (i2c_state);
-	//IICS_TCF = 1;	// Clear TCF flag if it is set.
-	switch(i2c_state)
-	{
-		/***************************/
-		// I2C in idle state.
-		case 0:											// i2c_idl
-			prev_st = 0;								// Set previous state.
-			break;
-		/***************************/
-		// Send a start condition.
-		case 1:											// i2c_start
-			IICC = 0xb0;								// Send the start bit.
-			if (prev_st == 0 || prev_st == 9 || prev_st == 16)
-				{ i2c_state = 2;} 					// send dev. addr with wr bit.
-			else if (prev_st == 11)
-				{ i2c_state = 12;}					// send dev. addr with rd bit.
-			break;
-		/***************************/
-		// Send a device address and write bit before wake command.
-		case 2:											// i2c_start
-			while(!IICS_TCF);							// Wait until transmission is done.  Wait for any transfer to complete.
-			IICD = *(i2c_buffer + 0);				// Send the addr. field with WR bit set (R/W = WR).
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Send a device address and write bit before meas. command.
-		case 3:											// i2c_start
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 0);				// Send the addr. field with WR bit set (R/W = WR).
-			//Delay(20);									// Delay 20 ms.
-			prev_st = 3;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Query for ACK response from slave.
-		case 5: 											// I2C_ACK_QRY;
-			if (IICS_RXAK)								/*	If NAK from slave. */
-			{
-				i2c_state = 0;							//I2C_IDLE;
-			}
-			else 											// If ACK.
-			{
-				if (prev_st == 0)						// If previous command is write before wakeup msb command.
+		// If the TCF flag is not set, do not process the state machine
+		// and return now with the current state.
+		//if (!IICS_TCF) return (i2c_state);
+		//IICS_TCF = 1;	// Clear TCF flag if it is set.
+		switch(i2c_state)
+		{
+			/***************************/
+			// I2C in idle state.
+			case 0:											// i2c_idl
+				prev_st = 0;								// Set previous state.
+				break;
+			/***************************/
+			// Send a start condition.
+			case 1:											// i2c_start
+				IICC = 0xb0;								// Send the start bit.
+				if (prev_st == 0 || prev_st == 9 || prev_st == 16)
+					i2c_state = 2; 						// send dev. addr with wr bit.
+				else if (prev_st == 11)
+					i2c_state = 12;						// send dev. addr with rd bit.
+				break;
+			/***************************/
+			// Send a device address and write bit before wake command.
+			case 2:											// i2c_start
+				while(!IICS_TCF);							// Wait until transmission is done.  Wait for any transfer to complete.
+				IICD = *(i2c_buffer + 0);				// Send the addr. field with WR bit set (R/W = WR).
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Send a device address and write bit before meas. command.
+			case 3:											// i2c_start
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 0);				// Send the addr. field with WR bit set (R/W = WR).
+				//Delay(20);									// Delay 20 ms.
+				prev_st = 3;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Query for ACK response from slave.
+			case 5: 											// I2C_ACK_QRY;
+				if (IICS_RXAK)								/*	If NAK from slave. */
+					i2c_state = 0;							// I2C_IDLE
+				else 											// If ACK.
 				{
-					i2c_state = 6;						// Go to wakeup cmd msb.
-				}	
-				else if (prev_st == 6)
-				{
-					i2c_state = 7;						// Go to wakeup cmd lsb
+					if (prev_st == 0)						// If previous command is write before wakeup msb command.
+						i2c_state = 6;						// Go to wakeup cmd msb.
+					else if (prev_st == 6)
+						i2c_state = 7;						// Go to wakeup cmd lsb
+					else if (prev_st == 7 || prev_st == 11 || prev_st == 19)
+						i2c_state = 8;						// Send stop bit state.
+					else if (prev_st == 9)
+						i2c_state = 10;					// send meas. command msb
+					else if (prev_st == 10)
+						i2c_state = 11;					// send meas. command lsb
+					else if (prev_st == 12)
+						i2c_state = 13;					// wait for read to start 
+					else if (prev_st == 16)
+						i2c_state = 18;					// send sleep command msb
+					else if (prev_st == 18)
+						i2c_state = 19;					// send sleep command lsb
 				}
-				else if (prev_st == 7 || prev_st == 11 || prev_st == 19)
-				{
-					i2c_state = 8;						// Send stop bit state.
-				}
-				else if (prev_st == 9)
-				{
-					i2c_state = 10;					// send meas. command msb
-				}
-				else if (prev_st == 10)
-				{
-					i2c_state = 11;					// send meas. command lsb
-				}
-				else if (prev_st == 12)
-				{
-					i2c_state = 13;					// wait for read to start 
-				}
-				else if (prev_st == 16)
-				{
-					i2c_state = 18;					// send sleep command msb
-				}
-				else if (prev_st == 18)
-				{
-					i2c_state = 19;					// send sleep command lsb
-				}
-			}
-			break;
-		/***************************/
-		// Send wakeup msb command.
-		case 6:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 1);				// Send the wakeup msb command.
-			//Delay(20);									// Delay 20 ms.
-			//snd_cmd = 1;								// Indicates after ACK, send a command.
-			prev_st = 6;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Send wakeup lsb command.
-		case 7:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 2);				// Send the wakeup msb command.
-			prev_st = 7;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Send a stop and go to slave mode.
-		case 8:											// 
-			IICC_MST = 0;								// Send a stop (go to slave mode)
-			if (prev_st == 7)
-				{	i2c_state = 9;}					// Wait for device to wake up.
-			else if (prev_st == 11 || prev_st == 16)
-				{
+				break;
+			/***************************/
+			// Send wakeup msb command.
+			case 6:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 1);				// Send the wakeup msb command.
+				//Delay(20);									// Delay 20 ms.
+				//snd_cmd = 1;								// Indicates after ACK, send a command.
+				prev_st = 6;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Send wakeup lsb command.
+			case 7:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 2);				// Send the wakeup msb command.
+				prev_st = 7;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Send a stop and go to slave mode.
+			case 8:											// 
+				IICC_MST = 0;								// Send a stop (go to slave mode)
+				if (prev_st == 7)
+					i2c_state = 9;						// Wait for device to wake up.
+				else if (prev_st == 11 || prev_st == 16)
 					i2c_state = 1;						// send start bit 
-				}
-			else
-				{
-					i2c_state = 0						// idle
-					rd_byte_cntr = 0					// reset
-				}
-			break;
-		/**************************/
-		// Wait for device to wake up.
-		case 9:											// 
-			Delay(2);									// Delay 2 ms.
-			prev_st = 9;
-			i2c_state = 1; 							// Start bit state.
-			break;
-		/***************************/
-		// Send the meas. msb command.
-		case 10:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 3);				// Send the meas. msb command.
-			prev_st = 10;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Send the meas. lsb command.
-		case 11:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 4);				// Send the meas. lsb command.
-			prev_st = 11;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Send device addr. rd command.
-		case 12:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 5);				// Send the device address and W/R bit sets to read.
-			prev_st = 12;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Wait for device to finish meas.
-		case 13:											// 
-			Delay(13);									// Delay 13 ms.
-			prev_st = 13;
-			i2c_state = 15; 							// Start to read data.
-			break;
-		/***************************/
-		// Send the read command packet.
-		case 4:											// I2C_SND_RD_CMD;
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = cmd_byte;							// Send the read command.
-			Delay(20); 									// Delay for 20 ms.
-			snd_cmd = 0;								// Do not send a read command next.
-			rpt_strt = 1;								// Send a repeated start next.
-			i2c_state = 3;								// I2C_ACK_QRY;// Next state, query for ACK.
-			break;
-		/***************************/
-		// Do a dummy read to change direction and cause a delay.
-		case 14:											// I2C_DUMMY_READ:
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICC_TX = 0;								// Change to read mode.
-			*(i2c_buffer + 3) = IICD;				// Do a dummy read.
-			Delay(20);									// Wait 20 ms.
-			i2c_state = 6;								// I2C_RD_BYTE;	// Dummy read, does not require an ACK send.
-			break;
-		/***************************/
-		// Read one byte of data from sensor.
-		case 15:											// I2C_RD_BYTE:
-			while(!IICS_TCF);							// Wait until ready.
-			/* When transmission is done, ready to do some thing. */
-			*(data + rd_byte_cntr) = IICD;		// Read one byte of data from sensor.
-			rd_byte_cntr =+ 1;						// Increment counter.
-			Delay(20);									// Wait 20 ms.
-			if (rd_byte_cntr >5)
-			{	
-				i2c_state = 1;							// Send Start bit.			
-			}
-			else
-				i2c_state = 16;						// Send ACK.
-			prev_st = 15;
-		/***************************/
-		// Send ACK after byte read.
-		case 16:											// I2C_SND_ACK:
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICC_TXAK = 0;								// Send ACK.
-			Delay(10);									// Wait 10 ms.
-			if (rd_byte_cntr < 6)					// If has not read 6 bytes yet.
-			{
-				i2c_state = 15;
-			}
-			else
-				i2c_state = 8;							// Send stop bit;
-			break;
-			prev_st = 16;
-		/***************************/
-		// Send NAK after CRC byte read.
-		case 17:											// I2C_SND_NAK:
-			IICC_TXAK = 1;								// Send NAK.
-			Delay(10);									// Wait 10 ms.
-			i2c_state = 9;								// I2C_STOP;
-			break;
-		/***************************/
-		// Send the sleep command msb.
-		case 18:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 6);				// Send the sleep msb command.
-			prev_st = 18;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Send the sleep lsb command.
-		case 19:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = *(i2c_buffer + 7);				// Send the meas. lsb command.
-			prev_st = 19;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
+				else
+					{
+						i2c_state = 0;						// idle
+						rd_byte_cntr = 0;					// reset
+						ste_out.done = 1;					// Finish state machine
+					}
+				break;
+			/**************************/
+			// Wait for device to wake up.
+			case 9:											// 
+				delay(2);									// Delay 2 ms.
+				prev_st = 9;
+				i2c_state = 1; 							// Start bit state.
+				break;
+			/***************************/
+			// Send the meas. msb command.
+			case 10:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 3);				// Send the meas. msb command.
+				prev_st = 10;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Send the meas. lsb command.
+			case 11:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 4);				// Send the meas. lsb command.
+				prev_st = 11;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Send device addr. rd command.
+			case 12:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 5);				// Send the device address and W/R bit sets to read.
+				prev_st = 12;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Wait for device to finish meas.
+			case 13:											// 
+				delay(13);									// Delay 13 ms.
+				prev_st = 13;
+				i2c_state = 15; 							// Start to read data.
+				break;
+			/***************************/
+			// Send the read command packet.
+			case 4:											// I2C_SND_RD_CMD;
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = cmd_byte;							// Send the read command.
+				delay(20); 									// Delay for 20 ms.
+				snd_cmd = 0;								// Do not send a read command next.
+				rpt_strt = 1;								// Send a repeated start next.
+				i2c_state = 3;								// I2C_ACK_QRY;// Next state, query for ACK.
+				break;
+			/***************************/
+			// Do a dummy read to change direction and cause a delay.
+			case 14:											// I2C_DUMMY_READ:
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICC_TX = 0;								// Change to read mode.
+				*(i2c_buffer + 8) = IICD;				// Do a dummy read.
+				delay(20);									// Wait 20 ms.
+				i2c_state = 6;								// I2C_RD_BYTE;	// Dummy read, does not require an ACK send.
+				break;
+			/***************************/
+			// Read one byte of data from sensor.
+			case 15:											// I2C_RD_BYTE:
+				while(!IICS_TCF);							// Wait until ready.
+				/* When transmission is done, ready to do some thing. */
+				*(ste_out.data + rd_byte_cntr) = IICD;		// Read one byte of data from sensor.
+				rd_byte_cntr =+ 1;						// Increment counter.
+				delay(20);									// Wait 20 ms.
+				if (rd_byte_cntr >5)	
+					i2c_state = 1;							// Send Start bit.			
+				else
+					i2c_state = 16;						// Send ACK.
+				prev_st = 15;
+				break;
+			/***************************/
+			// Send ACK after byte read.
+			case 16:											// I2C_SND_ACK:
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICC_TXAK = 0;								// Send ACK.
+				delay(10);									// Wait 10 ms.
+				if (rd_byte_cntr < 6)					// If has not read 6 bytes yet.
+					i2c_state = 15;
+				else
+					i2c_state = 8;							// Send stop bit;
+				prev_st = 16;
+				break;
+			//***************************/
+			// Send NAK after CRC byte read.
+			case 17:											// I2C_SND_NAK:
+				IICC_TXAK = 1;								// Send NAK.
+				delay(10);									// Wait 10 ms.
+				i2c_state = 9;								// I2C_STOP;
+				break;
+			/***************************/
+			// Send the sleep command msb.
+			case 18:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 6);				// Send the sleep msb command.
+				prev_st = 18;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Send the sleep lsb command.
+			case 19:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = *(i2c_buffer + 7);				// Send the meas. lsb command.
+				prev_st = 19;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+		}
+	return (ste_out);
 	}
-	return (data);
 }

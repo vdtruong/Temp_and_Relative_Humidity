@@ -18,23 +18,24 @@ void tca9548a_fsm(unsigned char cntrl_reg);	// Change which i2c channel to use.
 void tca9548a_fsm(unsigned char cntrl_reg)
 {
 	static unsigned char cntrl_reg_label = 0x00;
+	static unsigned char done = 0;
 
-	if (cntrl_reg == 0){
-		cntrl_reg_label = 0x01;}
-	else if (cntrl_reg == 1){
-		cntrl_reg_label = 0x02;}
-	else if (cntrl_reg == 2){
-		cntrl_reg_label = 0x04;}
-	else if (cntrl_reg == 3){
-		cntrl_reg_label = 0x08;}
-	else if (cntrl_reg == 4){
-		cntrl_reg_label = 0x10;}
-	else if (cntrl_reg == 5){
-		cntrl_reg_label = 0x20;}
-	else if (cntrl_reg == 6){
-		cntrl_reg_label = 0x40;}
-	else if (cntrl_reg == 7){
-		cntrl_reg_label = 0x80;}
+	if (cntrl_reg == 0)
+		cntrl_reg_label = 0x01;
+	else if (cntrl_reg == 1)
+		cntrl_reg_label = 0x02;
+	else if (cntrl_reg == 2)
+		cntrl_reg_label = 0x04;
+	else if (cntrl_reg == 3)
+		cntrl_reg_label = 0x08;
+	else if (cntrl_reg == 4)
+		cntrl_reg_label = 0x10;
+	else if (cntrl_reg == 5)
+		cntrl_reg_label = 0x20;
+	else if (cntrl_reg == 6)
+		cntrl_reg_label = 0x40;
+	else if (cntrl_reg == 7)
+		cntrl_reg_label = 0x80;
 
 	static unsigned char i2c_buffer[10]= 	{
 														0xEE,	// Send addr. and write. 	0	
@@ -61,70 +62,66 @@ void tca9548a_fsm(unsigned char cntrl_reg)
 		7	I2C_SND_STOP_BIT
 	*/
 
-	if (strt)
+	while(!done)
 	{
-		i2c_state = 1;									// go to start state
-	}
-	else
-	{
-		i2c_state = 0;									// stay at idle state.
-	}	
+		if (strt)
+			i2c_state = 1;									// go to start state
+		else
+			i2c_state = 0;									// stay at idle state.
 
-	switch(i2c_state)
-	{
-		/***************************/
-		// I2C in idle state.
-		case 0:											// i2c_idl
-			prev_st = 0;								// Set previous state.
-			break;
-		/***************************/
-		// Send a start condition.
-		case 1:											// i2c_start
-			IICC = 0xb0;								// Send the start bit.
-			if (prev_st == 0 || prev_st == 9 || prev_st == 16)
-				{ i2c_state = 2;} 					// send dev. addr with wr bit.
-			else if (prev_st == 11)
-				{ i2c_state = 12;}					// send dev. addr with rd bit.
-			break;
-		/***************************/
-		// Send a device address and write bit.
-		case 2:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.  Wait for any transfer to complete.
-			IICD = *(i2c_buffer + 0);				// Send the addr. field with WR bit set (R/W = WR).
-			prev_st = 2;
-			i2c_state = 5; 							// I2C_ACK_QRY;			// next state
-			break;
-		/***************************/
-		// Query for ACK response from slave.
-		case 5: 											// I2C_ACK_QRY;
-			if (IICS_RXAK)								/*	If NAK from slave. */
-			{
-				i2c_state = 0;							//I2C_IDLE;
-			}
-			else 											// If ACK.
-			{
-				if (prev_st == 2)						// If previous command is send device address.
+		switch(i2c_state)
+		{
+			/***************************/
+			// I2C in idle state.
+			case 0:											// i2c_idl
+				prev_st = 0;								// Set previous state.
+				break;
+			/***************************/
+			// Send a start condition.
+			case 1:											// i2c_start
+				IICC = 0xb0;								// Send the start bit.
+				if (prev_st == 0 || prev_st == 9 || prev_st == 16)
+					i2c_state = 2; 						// send dev. addr with wr bit.
+				else if (prev_st == 11)
+					i2c_state = 12;						// send dev. addr with rd bit.
+				break;
+			/***************************/
+			// Send a device address and write bit.
+			case 2:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.  Wait for any transfer to complete.
+				IICD = *(i2c_buffer + 0);				// Send the addr. field with WR bit set (R/W = WR).
+				prev_st = 2;
+				i2c_state = 5; 							// I2C_ACK_QRY;			// next state
+				break;
+			/***************************/
+			// Query for ACK response from slave.
+			case 5: 											// I2C_ACK_QRY;
+				if (IICS_RXAK)								/*	If NAK from slave. */
+					i2c_state = 0;							//I2C_IDLE;
+				else 											// If ACK.
 				{
-					i2c_state = 6;						// Go to send iic channel.
-				}	
-			}
-			break;
-		/***************************/
-		// Send iic channel.
-		case 6:											// 
-			while(!IICS_TCF);							// Wait until transmission is done.
-			IICD = cntrl_reg_label;					// Send the tca9548a iic channel..
-			//Delay(20);									// Delay 20 ms.
-			//snd_cmd = 1;								// Indicates after ACK, send a command.
-			prev_st = 6;
-			i2c_state = 7; 							// stop bit;			// next state
-			break;
-		/***************************/
-		// Send a stop and go to slave mode.
-		case 7:											// 
-			IICC_MST = 0;								// Send a stop (go to slave mode)
-			i2c_state = 0;								// idle
-			break;
-		/**************************/
+					if (prev_st == 2)						// If previous command is send device address.
+						i2c_state = 6;						// Go to send iic channel.	
+				}
+				break;
+			/***************************/
+			// Send iic channel.
+			case 6:											// 
+				while(!IICS_TCF);							// Wait until transmission is done.
+				IICD = cntrl_reg_label;					// Send the tca9548a iic channel..
+				//Delay(20);									// Delay 20 ms.
+				//snd_cmd = 1;								// Indicates after ACK, send a command.
+				prev_st = 6;
+				i2c_state = 7; 							// stop bit;			// next state
+				break;
+			/***************************/
+			// Send a stop and go to slave mode.
+			case 7:											// 
+				IICC_MST = 0;								// Send a stop (go to slave mode)
+				i2c_state = 0;								// idle
+				done = 1;									// Finished
+				break;
+			/**************************/
+		}
 	}
 }
