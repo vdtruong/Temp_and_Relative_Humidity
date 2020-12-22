@@ -4,6 +4,8 @@
 // --------------------------------------------------------------------------------------
 // Delay of multiples of 1ms
 /////////////////////////////////////////////////////////////////////////////////////////
+#include "mc9s08qe128.h"
+
 void delay(unsigned char del)
 {
   // Selcts fBUS as timer clock source and starts the timer

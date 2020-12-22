@@ -9,6 +9,9 @@
 /* The pibs project will only use the two iic and rs232 pairs modules. */
 /* This also adds the initialization function for the holtek module. */
 
+#include "misc.c"
+#include "mc9s08qe128.h"
+
 /* function prototypes */
 void MCU_Init(void);
 void SCI_Init (void);
@@ -16,7 +19,6 @@ void iic1Init(void);
 void iic2Init(void);
 void GPIO_Init(void);
 void initDevice(void);
-//void initFuncts(void);
 void initHt16k33(void);
 /***********************/
 
