@@ -216,8 +216,10 @@ struct Shtc3Outputs i2c_fsm_shtc3(unsigned char strt)
 														0x00,	// read r.h. data.		8		5
 														0x00 	// read r.h. crc			9		6
 														};		
-	struct Shtc3Outputs ste_out;						// state machine outputs
+	static struct Shtc3Outputs ste_out;				// state machine outputs
 	
+	ste_out.done = 0;
+
 	/*		
 		i2c_state:
 		
@@ -451,7 +453,7 @@ struct Shtc3Outputs i2c_fsm_shtc3(unsigned char strt)
 				i2c_state = 5; 								// I2C_ACK_QRY;			// next state
 				break;
 			/***************************/
-		}
+		} 	/* switch */
+	}		/* while */
 	return (ste_out);
-	}
 }

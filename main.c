@@ -9,20 +9,19 @@
 #include "initFunctions.c"
 #include "i2c_sens_states.c"
 #include "holtek_ht16k33.c"
-#include "misc.c"
+//#include "misc.c"
 #include "tca9548a.c"
-//#include "structures.h"
-#include "headers.h"
+//#include "headers.h"
 
 void main(void) { 
   
 	static unsigned char cntrl_reg = 0;																		/* Set the counter for the tca9548a. */
-	static unsigned tca_done = 0;
-	//static shtc3_output sens_outputs;
+	static unsigned char tca_done = 0;
 	static struct Shtc3Outputs sens_outputs;
 	static unsigned char slv_addr[8] = {0xe0, 0xe2, 0xe4, 0xe6, 0xe8, 0xea, 0xec, 0xee};	/* slave address with write bit */
 	static unsigned char slv_addr_cntr = 0;																/* There are eight displays. */
 	
+	sens_outputs.done = 0;
   	initDevice();
   	delay(10);	/* ms */
 

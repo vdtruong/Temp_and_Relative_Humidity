@@ -19,11 +19,32 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data);
  	The data is in this order [rh_msb, rh_lsb, rh_crc, t_msb, t_lsb, t_crc]. */
 unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 {
-	static unsigned char done_sm = 0;				// Indicates if state machine is done.
+	/*static unsigned char done_sm = 0;				// Indicates if state machine is done.
 	static unsigned char addr_indx = 0;				// Address of the com channel.
-	//static unsigned char digit_data = 0;			// Data for each digit of the 7-seg display.
+	static unsigned char digit_data = 0;			// Data for each digit of the 7-seg display.
 	static unsigned char i2c_state = 0;				// State machine index.
-	/*static unsigned char i2c_buffer[10]= 	{
+	*/
+	unsigned char done_sm = 0;				// Indicates if state machine is done.
+	unsigned char addr_indx = 0;				// Address of the com channel.
+	unsigned char digit_data = 0;			// Data for each digit of the 7-seg display.
+	unsigned char i2c_state = 0;				// State machine index.
+	unsigned char b = 0;
+	unsigned char done = 0;
+	float a = 0.0, c = 0.0, d = 0.0,  diff = 0.0;
+	unsigned char cntr = 0;
+	unsigned char disp_dig_indx[3];	/* Digits indexes for the display. */
+	unsigned char dspl_dig[4];		// Display digits array for 7-seg. 
+	unsigned int temp_raw = 0;
+	float temp_f = 0;							// temperature in farenheit.
+	float temp_c = 0;							// temperature in celsius. 
+	unsigned char digit_addr[4];
+	unsigned char disp_dig_lut_dp[13];
+	unsigned char disp_dig_lut[13];
+	unsigned char i2c_buffer[10];
+	
+
+
+/*static unsigned char i2c_buffer[10]= 	{
 														0xEE,	// Send addr. and write. 	0	
 														0x35,	// Wakeup command msb		1
 														0x17,	// Wakeup command lsb		2
@@ -72,28 +93,39 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 														0x06,	// Digit 2 (com 3)
 														0x08	// Digit 3 (com 4), F degree label
 														};	*/	
-	static unsigned short int temp_raw = 0;		// Set temperature value.
-	static float temp_f = 0;							// temperature in farenheit.*/
-	static float temp_c = 0;							// temperature in celsius. */
+	//static unsigned int temp_raw = 0x0000;	// Raw temperature value.
+	//unsigned int temp_raw = 0;
+	
+	/*static unsigned int or_temp_raw = 0x0000;	// Or t_msb or t_lsb with raw temp.
+	static unsigned char t_msb = 0;					// raw temp. msb
+	static unsigned char t_lsb = 0;					// raw temp. lsb
+	*/
+	//static unsigned char t_msb = 0x00;					// raw temp. msb
+	//static unsigned char t_lsb = 0x00;					// raw temp. lsb
+	
+	/*static float temp_f = 0;							// temperature in farenheit.
+	static float temp_c = 0;							// temperature in celsius. 
 	static unsigned char digit_addr[4];
 	static unsigned char disp_dig_lut_dp[13];
 	static unsigned char disp_dig_lut[13];
 	static unsigned char i2c_buffer[10];
+	*/
 	
-	/*		
-		i2c_states:
-		
-		0	I2C_IDLE
-		1	I2C_SND_STRT_BIT
-		2	I2C_SND_DEV_ADDR_WR
-		3	I2C_SND_DIG_ADDR
-		4	I2C_SND_STOP_BIT_AND_QUIT				// Send stop bit and quits.
-		5	I2C_ACK_QRY
-		6	I2C_SND_DIG_DAT
-		7	I2C_SND_STOP_BIT
-		8	CHK_DIG_FIN									// Check if all digits are written.
+	/*float temp_f = 0;							// temperature in farenheit.
+	float temp_c = 0;							// temperature in celsius. 
+	unsigned char digit_addr[4];
+	unsigned char disp_dig_lut_dp[13];
+	unsigned char disp_dig_lut[13];
+	unsigned char i2c_buffer[10];
 	*/
 
+	temp_raw = *(data + 3);
+	temp_raw <<= 8;
+	temp_raw |= *(data + 4);
+	//t_msb = *(data + 3);									// 
+	//t_lsb = *(data + 4);									//
+
+	//or_temp_raw = temp_raw | t_msb;
 	/* Move temperature data to temp variable. */
 	/* temp = t_msb, t_lsb */
 	/* Clear temp to all zeros. */
@@ -109,15 +141,23 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 
 	/* Extract each temperature value as an integer. 
 	 * Use this integer as an index to the displ_dig array. */
-	static unsigned char b = 0;
+	/*static unsigned char b = 0;
 	static unsigned char done = 0;
 	static float a = 0.0, c = 0.0, d = 0.0,  diff = 0.0;
 	static unsigned char cntr = 0;
 	static unsigned char disp_dig_indx[3];	/* Digits indexes for the display. */
-	static unsigned char dspl_dig[4];		// Display digits array for 7-seg. 
+	//static unsigned char dspl_dig[4];		// Display digits array for 7-seg. 
 	
-	a = temp_f/10.0;
-	while (!done)
+	/*unsigned char b = 0;
+	unsigned char done = 0;
+	float a = 0.0, c = 0.0, d = 0.0,  diff = 0.0;
+	unsigned char cntr = 0;
+	unsigned char disp_dig_indx[3];	/* Digits indexes for the display. */
+	//unsigned char dspl_dig[4];		// Display digits array for 7-seg. 
+	
+
+	//a = temp_f/10.0;
+	/*while (!done)
 	{
 		diff = a - b;
 		if (diff < 1.0)
@@ -157,28 +197,42 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 		{
 			b += 1;
 		}
-	}
+	}*/
+	
+	/*		
+		i2c_states:
+		
+		0	I2C_IDLE
+		1	I2C_SND_STRT_BIT
+		2	I2C_SND_DEV_ADDR_WR
+		3	I2C_SND_DIG_ADDR
+		4	I2C_SND_STOP_BIT_AND_QUIT				// Send stop bit and quits.
+		5	I2C_ACK_QRY
+		6	I2C_SND_DIG_DAT
+		7	I2C_SND_STOP_BIT
+		8	CHK_DIG_FIN									// Check if all digits are written.
+	*/
 
 	/* Now send the display digit. */
-	while(!done_sm)
-	{
-		switch(i2c_state)
-		{
+	//while(!done_sm)
+	//{
+	//	switch(i2c_state)
+	//	{
 			/***************************/
 			// I2C in idle state.
-			case 0:											// i2c_idle
+			/*case 0:											// i2c_idle
 				prev_st = 0;								// Set previous state.
 				done_sm = 1;								// exit state machine
 				break;
 			/***************************/
 			// Send a start condition.
-			case 1:											// i2c_start
+			/*case 1:											// i2c_start
 				IICC = 0xb0;								// Send the start bit.
 				i2c_state = 2;								// send dev. addr with wr bit.
 				break;
 			/***************************/
 			// Send a device address and write bit.
-			case 2:											// 
+			/*case 2:											// 
 				while(!IICS_TCF);							// Wait until transmission is done.  Wait for any transfer to complete.
 				IICD = slav_addr;							// Send the addr. field with WR bit set (R/W = WR).
 				prev_st = 2;
@@ -187,7 +241,7 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				break;
 			/***************************/
 			// Send digit address.
-			case 3:											// 
+			/*case 3:											// 
 				while(!IICS_TCF);							// Wait until transmission is done.
 				IICD = *(digit_addr + addr_indx);	// Send the digital address (com address).
 				prev_st = 3;
@@ -196,16 +250,16 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				break;
 			/***************************/
 			// Send a stop bit and quits.
-			case 4:											// 
+			/*case 4:											// 
 				IICC_MST = 0;								// Send a stop (go to slave mode)
 				done_sm = 1;								// 
 				break;
 			/**************************/
 			// Query for ACK response from slave.
-			case 5: 											// I2C_ACK_QRY;
+			/*case 5: 											// I2C_ACK_QRY;
 				if (IICS_RXAK)	{							/*	If NAK from slave. */
-					i2c_state = 4;}						// I2C_snd_stop_bit and quits;
-				else 											// If ACK.
+					//i2c_state = 4;}						// I2C_snd_stop_bit and quits;
+			/*	else 											// If ACK.
 				{
 					if (prev_st == 2){					// If previous command is send device address.
 						i2c_state = 3;	}					// Go to send digit address.
@@ -215,7 +269,7 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				break;
 			/***************************/
 			// Send digital data.
-			case 6:											// 
+			/*case 6:											// 
 				while(!IICS_TCF);							// Wait until transmission is done.
 				IICD = *(dspl_digit + addr_indx);	// Send the digit data
 				prev_st = 6;								// 
@@ -224,13 +278,13 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				break;
 			/***************************/
 			// Send a stop and go to slave mode.
-			case 7:											// 
+			/*case 7:											// 
 				IICC_MST = 0;								// Send a stop (go to slave mode)
 				i2c_state = 8;								// 
 				break;
 			/**************************/
 			// Decide if done with state machine.
-			case 8:											// 
+			/*case 8:											// 
 				if (addr_indx == 3){
 					done_sm = 1;	}						// done with digit
 				else {
@@ -239,8 +293,8 @@ unsigned char ht16k33_fsm(unsigned char slav_addr, unsigned char *data)
 				}
 				break;
 			/**************************/
-		}														// switch
-	}															// while
+	//	}														// switch
+	//}															// while
 
-	return done_sm;
+	//return (done_sm);
 }
