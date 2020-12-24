@@ -6,7 +6,7 @@
 */
 
 /* Need include for make. */
-#include "mc9s08qe128.h"
+//#include "mc9s08qe128.h"
 
 /* Function prototype(s). */
 unsigned char tca9548a_fsm(unsigned char cntrl_reg);	// Change which i2c channel to use.

@@ -8,7 +8,7 @@
 	to the 7-seg display.
 */
 
-#include "mc9s08qe128.h"
+//#include "mc9s08qe128.h"
 
 /* Function prototype(s). */
 // Inputs: address of 7-seg display, pointer to temp. data array

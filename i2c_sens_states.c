@@ -8,7 +8,7 @@
 #include "i2c_sens_states.h"
 #include "define.h"
 #include "headers.h"
-#include "mc9s08qe128.h"
+//#include "mc9s08qe128.h"
 //#include "structures.h"
 //#include "misc.c"
 
