@@ -4,12 +4,14 @@
 					of sci and iic modules.
 					This device will capture 8 temperature sensors and 
 					display their values on 8 7-seg displays.
+					The order of the build is compile, make and link.
 */
 
 #include "initFunctions.c"
 #include "i2c_sens_states.c"
 #include "holtek_ht16k33.c"
-//#include "misc.c"
+#include "misc.c"
+//#include "MiscFunctions.c"
 #include "tca9548a.c"
 //#include "headers.h"
 

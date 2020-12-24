@@ -8,6 +8,7 @@
 #include "i2c_sens_states.h"
 #include "define.h"
 #include "headers.h"
+#include "mc9s08qe128.h"
 //#include "structures.h"
 //#include "misc.c"
 
@@ -43,8 +44,7 @@ unsigned char *i2c_fsm(unsigned char strt)
 														0x00 	// read r.h. crc		9		6
 														};		
 
-	/*		
-		i2c_state:
+	/*	i2c_state:
 		
 		0	I2C_IDLE
 		1	I2C_START
